@@ -1,3 +1,4 @@
+var fs = require("fs");
 var http = require("http");
 
 function WebServer(hostAddress, portNumber, database)
@@ -6,17 +7,29 @@ function WebServer(hostAddress, portNumber, database)
 	this.portNumber = portNumber;
 	this.database = database;
 
+	this.statusCodes = new StatusCode_Instances();
+
 	this.server = http.createServer
 	(
 		this.handleRequest.bind(this)
 	);
 }
 {
+	// Inner classes.
+
+	function StatusCode_Instances()
+	{
+		this.OK = 200;
+		this.NotFound = 404;
+	}
+
+	// Methods.
+
 	WebServer.prototype.start = function()
 	{
 		this.server.listen(this.portNumber, this.hostAddress);
 
-		console.log
+		this.log
 		(
 			"Server running at http://" 
 			+ this.hostAddress + ":" 
@@ -28,12 +41,16 @@ function WebServer(hostAddress, portNumber, database)
 
 	WebServer.prototype.handleRequest = function(request, response) 
 	{
+		var webServer = this;
+
 		var requestUrl = request.url;
+		this.log("Request: " + requestUrl);
+
 		if (requestUrl == "/favicon.ico")
 		{
 			// Ignore favicon requests.
 		}
-		else
+		else if (requestUrl == "/databases")
 		{
 			this.database.connect();
 
@@ -43,6 +60,32 @@ function WebServer(hostAddress, portNumber, database)
 				this.handleRequest_QueryComplete.bind(this, response),
 				this // thisForQuery
 			);
+		}
+		else if ( requestUrl.startsWith("/Pages/") )
+		{
+			var pageFilePath = "." + requestUrl;
+
+			var pageAsString = fs.readFile
+			(
+				pageFilePath,
+				"utf8",
+				function(err, data)
+				{
+					if (err)
+					{
+						webServer.log("Error: " + err);
+						webServer.respondWithErrorNotFound(response);
+					}
+					else
+					{
+						webServer.respondWithText(response, data);
+					}
+				}
+			);
+		}
+		else
+		{
+			this.respondWithErrorNotFound(response);
 		}
 	};
 
@@ -68,17 +111,34 @@ function WebServer(hostAddress, portNumber, database)
 		this.respondWithText(response, responseText);
 	};
 
-	WebServer.prototype.respondWithText = function(response, responseText)
+	WebServer.prototype.respondWithErrorNotFound = function(response)
+	{
+		this.respondWithStatusCodeAndText(response, this.statusCodes.NotFound, "Not found!");
+	};
+
+	WebServer.prototype.respondWithStatusCodeAndText = function(response, statusCode, text)
 	{
 		response.writeHead
 		(
-			200, // "OK"
+			statusCode,
 			{"Text-Type": "text/plain"}
 		);
 
-		console.log("Response: " + responseText);
+		this.log("Response: " + text);
 
-		response.end(responseText);
+		response.end(text);
+	};
+
+	WebServer.prototype.respondWithText = function(response, text)
+	{
+		this.respondWithStatusCodeAndText(response, this.statusCodes.OK, text);
+	};
+
+	// Logging.
+
+	WebServer.prototype.log = function(message)
+	{
+		console.log(message);
 	};
 }
 
