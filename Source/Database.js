@@ -17,7 +17,7 @@ function Database(host, username, password, databaseName)
 			password : this.password,
 			database : this.databaseName
 		});
-	}
+	};
 
 	Database.prototype.query = function(queryText, callback, thisForCallback)
 	{
@@ -30,7 +30,7 @@ function Database(host, username, password, databaseName)
 		);
 
 		this.connection.end();
-	}
+	};
 
 	// events
 
@@ -42,7 +42,7 @@ function Database(host, username, password, databaseName)
 		if (error) throw error;
 
 		callback.call(thisForCallback, rowsRetrieved, fields);
-	}
+	};
 }
 
 exports.Database = Database;

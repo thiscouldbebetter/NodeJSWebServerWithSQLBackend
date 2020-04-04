@@ -26,33 +26,29 @@ function WebServer(hostAddress, portNumber, database)
 
 	// events
 
-	WebServer.prototype.handleRequest = function(webRequest, webResult) 
+	WebServer.prototype.handleRequest = function(request, response) 
 	{
-		if (webRequest.url == "/favicon.ico")
+		var requestUrl = request.url;
+		if (requestUrl == "/favicon.ico")
 		{
 			// Ignore favicon requests.
-			return;
 		}
+		else
+		{
+			this.database.connect();
 
-		this.database.connect();
-
-		this.database.query
-		(
-			"show databases",
-			this.handleRequest_QueryComplete.bind(this, webResult),
-			this // thisForQuery
-		);
+			this.database.query
+			(
+				"show databases",
+				this.handleRequest_QueryComplete.bind(this, response),
+				this // thisForQuery
+			);
+		}
 	};
 
-	WebServer.prototype.handleRequest_QueryComplete = function(webResult, rowsRetrieved, fields)
+	WebServer.prototype.handleRequest_QueryComplete = function(response, rowsRetrieved, fields)
 	{
-		webResult.writeHead
-		(
-			200, // OK
-			{"Content-Type": "text/plain"}
-		);
-
-		var resultContent = "";
+		var responseText = "";
 
 		for (var r = 0; r < rowsRetrieved.length; r++)
 		{
@@ -63,15 +59,26 @@ function WebServer(hostAddress, portNumber, database)
 				var fieldName = fields[f].name;
 				var fieldValue = row[fieldName];
 				
-				resultContent += fieldValue + " ";
+				responseText += fieldValue + " ";
 			}
 
-			resultContent += "\n";
+			responseText += "\n";
 		}
 
-		console.log("Result: " + resultContent);
+		this.respondWithText(response, responseText);
+	};
 
-		webResult.end(resultContent);
+	WebServer.prototype.respondWithText = function(response, responseText)
+	{
+		response.writeHead
+		(
+			200, // "OK"
+			{"Text-Type": "text/plain"}
+		);
+
+		console.log("Response: " + responseText);
+
+		response.end(responseText);
 	};
 }
 
