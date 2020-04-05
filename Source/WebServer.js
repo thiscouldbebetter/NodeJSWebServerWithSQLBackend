@@ -1,12 +1,15 @@
-var fs = require("fs");
 var http = require("http");
+var FileReader = require("./FileReader.js").FileReader;
 
-function WebServer(hostAddress, portNumber, database)
+function WebServer(hostAddress, portNumber, database, pages)
 {
 	this.hostAddress = hostAddress;
 	this.portNumber = portNumber;
 	this.database = database;
+	this.pages = pages;
+	this.pages.forEach(x => pages[x.path] = x);
 
+	this.fileReader = new FileReader();
 	this.statusCodes = new StatusCode_Instances();
 
 	this.server = http.createServer
@@ -21,6 +24,7 @@ function WebServer(hostAddress, portNumber, database)
 	{
 		this.OK = 200;
 		this.NotFound = 404;
+		this.ServerError = 500;
 	}
 
 	// Methods.
@@ -61,27 +65,50 @@ function WebServer(hostAddress, portNumber, database)
 				this // thisForQuery
 			);
 		}
-		else if ( requestUrl.startsWith("/Pages/") )
+		else if ( requestUrl.endsWith(".html") )
 		{
 			var pageFilePath = "." + requestUrl;
 
-			var pageAsString = fs.readFile
+			this.fileReader.readTextFromFileAtPathAsync
 			(
 				pageFilePath,
-				"utf8",
-				function(err, data)
+				function succeed(fileText)
 				{
-					if (err)
-					{
-						webServer.log("Error: " + err);
-						webServer.respondWithErrorNotFound(response);
-					}
-					else
-					{
-						webServer.respondWithText(response, data);
-					}
+					webServer.respondWithText(response, fileText);
+				},
+				function fail(error)
+				{
+					webServer.respondWithErrorNotFound(response);
 				}
 			);
+		}
+		else if ( requestUrl.endsWith(".page") )
+		{
+			var pagePath = requestUrl;
+			var page = this.pages[pagePath];
+			if (page == null)
+			{
+				this.respondWithErrorNotFound(response);
+			}
+			else
+			{
+				page.toHtmlAsync
+				(
+					function succeed(pageAsHtml)
+					{
+						webServer.respondWithText(response, pageAsHtml);
+					},
+					function fileNotFound()
+					{
+						webServer.respondWithErrorNotFound(response);
+					},
+					function fail(error)
+					{
+						webServer.log(error);
+						webServer.respondWithErrorUnexpected(response);
+					}
+				);
+			}
 		}
 		else
 		{
@@ -114,6 +141,11 @@ function WebServer(hostAddress, portNumber, database)
 	WebServer.prototype.respondWithErrorNotFound = function(response)
 	{
 		this.respondWithStatusCodeAndText(response, this.statusCodes.NotFound, "Not found!");
+	};
+
+	WebServer.prototype.respondWithErrorUnexpected = function(response)
+	{
+		this.respondWithStatusCodeAndText(response, this.statusCodes.ServerError, "An unexpected error occurred on the server!");
 	};
 
 	WebServer.prototype.respondWithStatusCodeAndText = function(response, statusCode, text)

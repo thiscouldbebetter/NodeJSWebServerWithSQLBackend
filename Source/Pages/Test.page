@@ -1,0 +1,12 @@
+<html>
+
+	<head>
+		<title>Template Test Page</title>
+	</head>
+
+<body>
+	<p>This page is a test of template substitution.</p>
+	<p>{placeholder}</p>
+</body>
+
+</html>

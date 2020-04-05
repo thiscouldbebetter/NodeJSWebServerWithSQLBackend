@@ -1,4 +1,5 @@
 var Database = require("./Database.js").Database;
+var Page = require("./Page.js").Page;
 var WebServer = require("./WebServer.js").WebServer;
 
 // main
@@ -17,7 +18,10 @@ function main()
 	(
 		"127.0.0.1", // hostAddress
 		1337, // portNumber
-		database
+		database,
+		[
+			new Page("/Pages/Test.page")
+		]
 	);
 
 	webServer.start();

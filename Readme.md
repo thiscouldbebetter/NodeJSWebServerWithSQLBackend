@@ -15,8 +15,8 @@ Installation on Linux
 5. run "sudo npm install mysql".
 5. Run "sudo apt install mysql-server".
 6. Set up and start the MySQL server, making a note of the root user password.  See MySQL documentation for details.
-7. Open 'Server.js' in a text editor, locate the placeholder password value "Password42", substitute in the actual MySQL password, and save.
-8. Back in the command prompt, and in the "Source" directory, run the command "node Server.js".
+7. Open 'main.js' in a text editor, locate the placeholder password value "Password42", substitute in the actual MySQL password, and save.
+8. Back in the command prompt, and in the "Source" directory, run the command "node main.js".  Or, just run "./Run.sh".
 9. In a web browser, navigate to the URL "http://localhost:1337".
 
 
